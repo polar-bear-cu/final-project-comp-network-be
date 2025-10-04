@@ -2,8 +2,7 @@ import { Request, Response } from "express";
 import User from "./userModel";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-export const tokenName = "sockeTalkJWTToken";
+import { tokenName } from "../middleware/authMiddleware";
 
 export async function register(req: Request, res: Response) {
   try {
@@ -70,6 +69,22 @@ export async function login(req: Request, res: Response) {
   } catch (error) {
     console.error(error);
     return res.status(500).json({
+      success: false,
+      message: "There's something wrong. Please try again!",
+    });
+  }
+}
+
+export async function getUserData(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+    res.status(200).json({
+      success: true,
+      message: user,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
       success: false,
       message: "There's something wrong. Please try again!",
     });

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRouter from "./users/userRoute";
 import connectDB from "./config/mongodb";
 import { allowedOrigins } from "./config/cors";
+import cookieParser from "cookie-parser";
 
 dotenv.config({ path: ".env" });
 connectDB();
@@ -17,6 +18,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(cookieParser());
 
 app.get("/api/v1/connection", (req, res) => {
   res.send("Hello, World!");
