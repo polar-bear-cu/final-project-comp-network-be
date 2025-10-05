@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 export const tokenName = "sockeTalkJWTToken";
 
 interface JwtPayload {
-  id: string;
+  userid: string;
   username: string;
 }
 
