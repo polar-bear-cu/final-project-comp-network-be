@@ -50,6 +50,9 @@ export async function login(req: Request, res: Response) {
       });
     }
 
+    existingUser.lastLoginAt = new Date();
+    await existingUser.save();
+
     const token = jwt.sign(
       { userid: existingUser._id, username: existingUser.username },
       process.env.JWT_SECRET as string,
@@ -62,10 +65,18 @@ export async function login(req: Request, res: Response) {
       secure: true,
     };
 
-    res.status(201).cookie(tokenName, token, cookieOptions).json({
-      success: true,
-      message: "User sign in successfully",
-    });
+    res
+      .status(201)
+      .cookie(tokenName, token, cookieOptions)
+      .json({
+        success: true,
+        message: "User signed in successfully",
+        user: {
+          id: existingUser._id,
+          username: existingUser.username,
+          lastLoginAt: existingUser.lastLoginAt,
+        },
+      });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -87,6 +98,29 @@ export async function getUserData(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: "There's something wrong. Please try again!",
+    });
+  }
+}
+
+export async function logOut(req: Request, res: Response) {
+  try {
+    res
+      .clearCookie(tokenName, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        path: "/",
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: "User logged out successfully",
+      });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while logging out.",
     });
   }
 }
