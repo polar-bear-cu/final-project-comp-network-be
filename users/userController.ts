@@ -3,10 +3,30 @@ import User from "./userModel";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { tokenName } from "../middleware/authMiddleware";
+import { checkFormValidation } from "../utils/function";
+
+export interface FormDataInterface {
+  username: string;
+  password: string;
+}
+
+export interface FormResultInterface {
+  pass: boolean;
+  message: string;
+}
 
 export async function register(req: Request, res: Response) {
   try {
     const { username, password } = req.body;
+
+    const formResult = checkFormValidation({ username, password });
+
+    if (!formResult.pass) {
+      res.status(400).json({
+        success: false,
+        message: formResult.message,
+      });
+    }
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
