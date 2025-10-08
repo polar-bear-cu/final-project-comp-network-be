@@ -6,8 +6,7 @@ const userSockets = new Map<string, string>();
 export function initSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
-      credentials: true,
+      origin: "*",
     },
   });
 

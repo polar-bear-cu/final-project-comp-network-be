@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import User from "./userModel";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { tokenName } from "../middleware/authMiddleware";
 import { checkFormValidation } from "../utils/function";
 import { Types } from "mongoose";
 
@@ -88,24 +87,10 @@ export async function login(req: Request, res: Response) {
       expiresIn: "1d",
     });
 
-    const cookieOptions = {
-      httpOnly: true,
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      secure: false,
-    };
-
-    res
-      .status(201)
-      .cookie(tokenName, token, cookieOptions)
-      .json({
-        success: true,
-        message: "User signed in successfully",
-        user: {
-          id: existingUser._id,
-          username: existingUser.username,
-          lastLoginAt: existingUser.lastLoginAt,
-        },
-      });
+    res.status(200).json({
+      success: true,
+      message: token,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -127,29 +112,6 @@ export async function getUserData(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: "There's something wrong. Please try again!",
-    });
-  }
-}
-
-export async function logOut(req: Request, res: Response) {
-  try {
-    res
-      .clearCookie(tokenName, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        path: "/",
-      })
-      .status(200)
-      .json({
-        success: true,
-        message: "User logged out successfully",
-      });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong while logging out.",
     });
   }
 }

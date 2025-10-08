@@ -16,22 +16,7 @@ async function startServer() {
   app.use(express.json());
   app.use(
     cors({
-      origin: [
-        "http://172.20.10.1:5173",
-        "http://172.20.10.2:5173",
-        "http://172.20.10.3:5173",
-        "http://172.20.10.4:5173",
-        "http://172.20.10.5:5173",
-        "http://172.20.10.6:5173",
-        "http://172.20.10.7:5173",
-        "http://172.20.10.8:5173",
-        "http://172.20.10.9:5173",
-        "http://172.20.10.10:5173",
-        "http://172.20.10.11:5173",
-        "http://172.20.10.12:5173",
-        "http://172.20.10.13:5173",
-        "http://172.20.10.14:5173",
-      ],
+      origin: "*",
       credentials: true,
     })
   );
@@ -46,11 +31,13 @@ async function startServer() {
   const io = initSocket(httpServer);
   app.set("io", io);
 
-  const PORT = process.env.PORT;
+  const PORT = Number(process.env.PORT);
   const IP = process.env.IP;
 
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Server running on ${IP}:${PORT}`);
+  httpServer.listen(PORT, IP, () => {
+    console.log(`Server running on ${IP}:${PORT}`);
+    console.log(`Local: http://localhost:${PORT}`);
+    console.log(`Network: http://${IP}:${PORT}`);
   });
 }
 

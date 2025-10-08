@@ -1,8 +1,5 @@
-// middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
-export const tokenName = "sockeTalkJWTToken";
 
 interface JwtPayload {
   userid: string;
@@ -10,7 +7,11 @@ interface JwtPayload {
 }
 
 export function verifyJWT(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies[tokenName];
+  const authHeader = req.headers.authorization;
+  const token =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : "";
 
   if (!token) {
     return res
