@@ -91,7 +91,7 @@ export async function login(req: Request, res: Response) {
     const cookieOptions = {
       httpOnly: true,
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      secure: true,
+      secure: false,
     };
 
     res
