@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import userRouter from "./users/userRoute";
 import connectDB from "./config/mongodb";
 import cookieParser from "cookie-parser";
-import { Server, Socket } from "socket.io";
+import { initSocket } from "./socket";
 
 async function startServer() {
   dotenv.config({ path: ".env" });
@@ -28,42 +28,14 @@ async function startServer() {
   app.use("/api/v1/user", userRouter);
 
   const httpServer = createServer(app);
-  const io = new Server(httpServer);
-
-  const userSockets = new Map<string, string>();
-
-  io.on("connection", (socket: Socket) => {
-    const userId = socket.handshake.query.userid as string;
-
-    if (!userId) {
-      console.log("No userid provided. Disconnecting socket:", socket.id);
-      socket.disconnect();
-      return;
-    }
-
-    if (userSockets.has(userId)) {
-      const oldSocketId = userSockets.get(userId) || "";
-      const oldSocket = io.sockets.sockets.get(oldSocketId);
-      if (oldSocket) {
-        oldSocket.disconnect(true);
-      }
-    }
-
-    userSockets.set(userId, socket.id);
-
-    console.log(`Socket connected for user ${userId}: ${socket.id}`);
-
-    socket.on("disconnect", () => {
-      console.log(`Socket disconnected: ${socket.id}`);
-      userSockets.delete(userId);
-    });
-  });
-
+  const io = initSocket(httpServer);
   app.set("io", io);
 
   const PORT = process.env.PORT;
+  const IP = process.env.IP;
+
   httpServer.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on ${IP}:${PORT}`);
   });
 }
 
