@@ -16,7 +16,8 @@ async function startServer() {
   app.use(express.json());
   app.use(
     cors({
-      origin: "*",
+      origin: "http://localhost:5173",
+      methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true,
     })
   );
@@ -36,8 +37,6 @@ async function startServer() {
 
   httpServer.listen(PORT, IP, () => {
     console.log(`Server running on ${IP}:${PORT}`);
-    console.log(`Local: http://localhost:${PORT}`);
-    console.log(`Network: http://${IP}:${PORT}`);
   });
 }
 

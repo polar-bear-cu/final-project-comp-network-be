@@ -7,6 +7,6 @@ const router = express.Router();
 router.post("/register", register);
 router.post("/login", login);
 router.get("/me", verifyJWT, getUserData);
-router.put("/addfrined", verifyJWT, addFriend);
+router.put("/add", verifyJWT, addFriend);
 
 export default router;

@@ -18,6 +18,7 @@ export interface FormResultInterface {
 export interface UserInterface {
   userid: Types.ObjectId;
   username: string;
+  friendList: Types.ObjectId[];
 }
 
 export async function register(req: Request, res: Response) {
@@ -75,12 +76,10 @@ export async function login(req: Request, res: Response) {
       });
     }
 
-    existingUser.lastLoginAt = new Date();
-    await existingUser.save();
-
     const userObject: UserInterface = {
       userid: existingUser._id,
       username: existingUser.username,
+      friendList: existingUser.friendList,
     };
 
     const token = jwt.sign(userObject, process.env.JWT_SECRET as string, {
@@ -102,7 +101,10 @@ export async function login(req: Request, res: Response) {
 
 export async function getUserData(req: Request, res: Response) {
   try {
-    const user = (req as any).user;
+    const userData = (req as any).user;
+
+    const user = await User.findById(userData.userid).populate("friendList");
+
     res.status(200).json({
       success: true,
       message: user,
@@ -118,33 +120,36 @@ export async function getUserData(req: Request, res: Response) {
 
 export async function addFriend(req: Request, res: Response) {
   try {
-    const user = (req as any).user;
-    const { friendUsername } = req.body;
+    const userData = (req as any).user;
+    const { friendid } = req.body;
 
-    if (!friendUsername) {
+    if (!friendid) {
       return res
         .status(400)
-        .json({ success: false, message: "Friend username is required." });
+        .json({ success: false, message: "Friend is required." });
     }
 
-    const friendUser = await User.findOne({ username: friendUsername });
+    const [user, friendUser] = await Promise.all([
+      User.findById(userData.userid),
+      User.findById(friendid),
+    ]);
 
-    if (!friendUser) {
+    if (!user || !friendUser) {
       return res
         .status(404)
-        .json({ success: false, message: "Friend user not found." });
+        .json({ success: false, message: "User not found." });
     }
 
-    if (friendUser._id.equals(user.userid)) {
+    if (friendUser._id.equals(user._id)) {
       return res.status(400).json({
         success: false,
         message: "You can't add yourself as a friend.",
       });
     }
 
-    const alreadyFriend = user.friendList.some((id: Types.ObjectId) => {
-      return id == friendUser._id;
-    });
+    const alreadyFriend = user.friendList.some((id: Types.ObjectId) =>
+      id.equals(friendUser._id)
+    );
 
     if (alreadyFriend) {
       return res.status(400).json({
@@ -164,7 +169,7 @@ export async function addFriend(req: Request, res: Response) {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Something went wrong while adding friend.",
     });

@@ -1,40 +1,93 @@
 import { Server, Socket } from "socket.io";
 import type { Server as HttpServer } from "node:http";
 
-const userSockets = new Map<string, string>();
+interface ActiveUser {
+  userid: string;
+  username: string;
+}
+
+interface UserSockets {
+  username: string;
+  socketIds: Set<string>;
+}
+
+const userSockets = new Map<string, UserSockets>();
 
 export function initSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: "http://localhost:5173",
+      methods: ["GET", "POST", "PUT", "DELETE"],
+      credentials: true,
     },
   });
 
   io.on("connection", (socket: Socket) => {
     const userId = socket.handshake.auth.userid as string;
+    const username = socket.handshake.auth.username as string;
 
-    if (!userId) {
-      console.log("No userid provided. Disconnecting socket:", socket.id);
+    console.log(`User ${username} (${userId}) connected`);
+
+    if (!userId || !username) {
+      console.log("No user data provided. Disconnecting socket:", socket.id);
       socket.disconnect();
       return;
     }
 
-    if (userSockets.has(userId)) {
-      const oldSocketId = userSockets.get(userId)!;
-      const oldSocket = io.sockets.sockets.get(oldSocketId);
-      if (oldSocket) oldSocket.disconnect(true);
+    if (!userSockets.has(userId)) {
+      userSockets.set(userId, { username, socketIds: new Set() });
     }
+    userSockets.get(userId)!.socketIds.add(socket.id);
 
-    socket.on("open-addfriend-popup", () => {
-      io.emit("active-users-id", Array.from(userSockets.keys()));
+    const activeUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
+      ([id, info]) => ({ userid: id, username: info.username })
+    );
+    io.emit("active-users", activeUsers);
+
+    socket.on("get-active-users", () => {
+      const activeUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
+        ([id, info]) => ({ userid: id, username: info.username })
+      );
+
+      socket.emit("active-users", activeUsers);
     });
 
-    userSockets.set(userId, socket.id);
-    console.log(`Socket connected for user ${userId}: ${socket.id}`);
+    socket.on("friend-added", ({ userid, friendid }) => {
+      const userInfo = userSockets.get(userId);
+      const friendInfo = userSockets.get(friendid);
+      if (!userInfo) return;
+
+      const userObject = { userid, username: userInfo.username };
+
+      if (friendInfo) {
+        for (const sid of friendInfo.socketIds) {
+          io.to(sid).emit("new-friend", userObject);
+        }
+        for (const sid of userInfo.socketIds) {
+          io.to(sid).emit("new-friend", {
+            userid: friendid,
+            username: friendInfo.username,
+          });
+        }
+      }
+    });
 
     socket.on("disconnect", () => {
-      userSockets.delete(userId);
-      io.emit("active-users-id", Array.from(userSockets.keys()));
+      const userInfo = userSockets.get(userId);
+      if (!userInfo) return;
+
+      userInfo.socketIds.delete(socket.id);
+      if (userInfo.socketIds.size === 0) {
+        userSockets.delete(userId);
+      }
+
+      const activeUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
+        ([id, info]) => ({ userid: id, username: info.username })
+      );
+
+      io.emit("active-users", activeUsers);
+
+      console.log(`User ${username} (${userId}) disconnected`);
     });
   });
 

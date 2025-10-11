@@ -13,7 +13,6 @@ const userSchema = new Schema(
         default: [],
       },
     ],
-    lastLoginAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
