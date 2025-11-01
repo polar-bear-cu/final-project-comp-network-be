@@ -45,31 +45,7 @@ export function initSocket(httpServer: HttpServer) {
     io.emit("active-users", activeUsers);
 
     socket.on("get-active-users", () => {
-      const activeUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
-        ([id, info]) => ({ userid: id, username: info.username })
-      );
-
       socket.emit("active-users", activeUsers);
-    });
-
-    socket.on("friend-added", ({ userid, friendid }) => {
-      const userInfo = userSockets.get(userId);
-      const friendInfo = userSockets.get(friendid);
-      if (!userInfo) return;
-
-      const userObject = { userid, username: userInfo.username };
-
-      if (friendInfo) {
-        for (const sid of friendInfo.socketIds) {
-          io.to(sid).emit("new-friend", userObject);
-        }
-        for (const sid of userInfo.socketIds) {
-          io.to(sid).emit("new-friend", {
-            userid: friendid,
-            username: friendInfo.username,
-          });
-        }
-      }
     });
 
     socket.on("disconnect", () => {
@@ -81,11 +57,10 @@ export function initSocket(httpServer: HttpServer) {
         userSockets.delete(userId);
       }
 
-      const activeUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
+      const updatedActiveUsers: ActiveUser[] = Array.from(userSockets.entries()).map(
         ([id, info]) => ({ userid: id, username: info.username })
       );
-
-      io.emit("active-users", activeUsers);
+      io.emit("active-users", updatedActiveUsers);
 
       console.log(`User ${username} (${userId}) disconnected`);
     });
